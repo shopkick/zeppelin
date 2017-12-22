@@ -151,6 +151,11 @@ function auth() {
   return $http.get(baseUrlSrv.getRestApiBase() + '/security/ticket').then(function(response) {
     zeppelinWebApp.run(function($rootScope) {
       $rootScope.ticket = angular.fromJson(response.data).body;
+      $rootScope.ticket.screenUsername = $rootScope.ticket.principal
+      if ($rootScope.ticket.principal.indexOf('#Pac4j') === 0) {
+        let re = ', name=(.*?),'
+        $rootScope.ticket.screenUsername = $rootScope.ticket.principal.match(re)[1]
+      }
     });
   }, function(errorResponse) {
     // Handle error case
