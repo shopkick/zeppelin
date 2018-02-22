@@ -312,9 +312,14 @@ public class BigQueryInterpreter extends Interpreter {
     final String projId, final long wTime, final long maxRows) 
       throws IOException {
     try {
+      boolean useLegacy = queryString.trim().startsWith("#legacySQL");
       QueryResponse query = service.jobs().query(
           projId,
-          new QueryRequest().setTimeoutMs(wTime).setQuery(queryString).setMaxResults(maxRows))
+          new QueryRequest()
+            .setTimeoutMs(wTime)
+            .setQuery(queryString)
+            .setMaxResults(maxRows)
+            .setUseLegacySql(useLegacy))
           .execute();
       jobId = query.getJobReference().getJobId();
       projectId = query.getJobReference().getProjectId();
