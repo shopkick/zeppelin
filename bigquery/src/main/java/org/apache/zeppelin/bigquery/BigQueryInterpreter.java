@@ -42,6 +42,7 @@ import com.google.api.services.bigquery.model.QueryRequest;
 import com.google.api.services.bigquery.model.QueryResponse;
 import com.google.api.services.bigquery.model.JobCancelResponse;
 import com.google.gson.Gson;
+import com.google.api.client.util.Data;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -170,7 +171,7 @@ public class BigQueryInterpreter extends Interpreter {
   }
 
   public static String getFormattedString(TableCell field, String type, String tZone) {
-    String formVal = field.getV().toString();
+    String formVal = (Data.isNull(field.getV())) ? "<NULL>" : field.getV().toString();
     switch (type) {
         case "TIMESTAMP":
           try {
