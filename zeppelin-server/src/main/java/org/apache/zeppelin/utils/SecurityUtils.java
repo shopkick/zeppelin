@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import io.buji.pac4j.subject.Pac4jPrincipal;
 
 import org.apache.shiro.config.IniSecurityManagerFactory;
 import org.apache.shiro.mgt.SecurityManager;
@@ -50,7 +51,7 @@ public class SecurityUtils {
   private static final HashSet<String> EMPTY_HASHSET = Sets.newHashSet();
   private static boolean isEnabled = false;
   private static final Logger log = LoggerFactory.getLogger(SecurityUtils.class);
-  
+
   public static void initSecurityManager(String shiroPath) {
     IniSecurityManagerFactory factory = new IniSecurityManagerFactory("file:" + shiroPath);
     SecurityManager securityManager = factory.getInstance();
@@ -90,7 +91,13 @@ public class SecurityUtils {
 
     String principal;
     if (subject.isAuthenticated()) {
-      principal = subject.getPrincipal().toString();
+      Object princ = subject.getPrincipal();
+      if (princ instanceof Pac4jPrincipal) {
+        principal = ((Pac4jPrincipal) princ).getProfile().getEmail();
+        log.info("principal get name: " + principal);
+      } else {
+        principal = subject.getPrincipal().toString();
+      }
     } else {
       principal = ANONYMOUS;
     }

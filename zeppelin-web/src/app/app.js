@@ -152,9 +152,15 @@ function auth() {
     zeppelinWebApp.run(function($rootScope) {
       $rootScope.ticket = angular.fromJson(response.data).body;
       $rootScope.ticket.screenUsername = $rootScope.ticket.principal
+      $rootScope.loginDomain = ''
       if ($rootScope.ticket.principal.indexOf('#Pac4j') === 0) {
         let re = ', name=(.*?),'
         $rootScope.ticket.screenUsername = $rootScope.ticket.principal.match(re)[1]
+        let re1 = 'email=.*?@(.*?)[ ,}]'
+        $rootScope.loginDomain = $rootScope.ticket.principal.match(re1)[1]
+      } else {
+        let re1 = '.*?@(.*)'
+        $rootScope.loginDomain = $rootScope.ticket.principal.match(re1)[1]
       }
     });
   }, function(errorResponse) {

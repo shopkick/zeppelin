@@ -125,9 +125,10 @@ function NavCtrl($scope, $rootScope, $http, $routeParams, $location,
   }
 
   function showLoginWindow() {
-    setTimeout(function() {
-      angular.element('#userName').focus();
-    }, 500);
+//    setTimeout(function() {
+//      angular.element('#userName').focus();
+//    }, 500);
+      window.location.reload();
   }
 
   /*

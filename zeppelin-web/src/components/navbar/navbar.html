@@ -46,6 +46,7 @@ limitations under the License.
           </ul>
         </li>
         <li><a href="#/jobmanager">Job</a></li>
+        <li ng-if="loginDomain != 'shopkick.com'"><b>You are logged in with non-shopkick id. Please logout and login with shopkick id</b></li>
       </ul>
 
       <ul class="nav navbar-nav navbar-right" style="margin-right:5px;">
@@ -102,7 +103,7 @@ limitations under the License.
           </div>
         </li>
         <li class="nav-component" ng-if="!ticket">
-          <button class="btn nav-login-btn" data-toggle="modal" data-target="#loginModal"
+          <button class="btn nav-login-btn" data-toggle="modal"
                   ng-click="navbar.showLoginWindow()">Login
           </button>
         </li>
