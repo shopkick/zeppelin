@@ -254,7 +254,10 @@ public class ZeppelinServer extends Application {
               new SslConnectionFactory(getSslContextFactory(conf), HttpVersion.HTTP_1_1.asString()),
               new HttpConnectionFactory(httpsConfig));
     } else {
-      connector = new ServerConnector(server);
+      HttpConfiguration httpConfig = new HttpConfiguration();
+      httpConfig.addCustomizer( new org.eclipse.jetty.server.ForwardedRequestCustomizer() );
+      HttpConnectionFactory connectionFactory = new HttpConnectionFactory( httpConfig );
+      connector = new ServerConnector(server, connectionFactory);
     }
 
     // Set some timeout options to make debugging easier.
@@ -322,7 +325,7 @@ public class ZeppelinServer extends Application {
     if (!StringUtils.isBlank(shiroIniPath)) {
       webapp.setInitParameter("shiroConfigLocations", new File(shiroIniPath).toURI().toString());
       SecurityUtils.initSecurityManager(shiroIniPath);
-      webapp.addFilter(ShiroFilter.class, "/api/*", EnumSet.allOf(DispatcherType.class));
+      webapp.addFilter(ShiroFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
       webapp.addEventListener(new EnvironmentLoaderListener());
     }
   }
