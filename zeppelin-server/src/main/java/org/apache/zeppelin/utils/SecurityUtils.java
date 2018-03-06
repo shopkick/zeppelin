@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import io.buji.pac4j.subject.Pac4jPrincipal;
+import java.security.Principal;
 
 import org.apache.shiro.config.IniSecurityManagerFactory;
 import org.apache.shiro.mgt.SecurityManager;
@@ -92,8 +92,8 @@ public class SecurityUtils {
     String principal;
     if (subject.isAuthenticated()) {
       Object princ = subject.getPrincipal();
-      if (princ instanceof Pac4jPrincipal) {
-        principal = ((Pac4jPrincipal) princ).getProfile().getEmail();
+      if (princ instanceof Principal) {
+        principal = ((Principal) princ).getName();
         log.info("principal get name: " + principal);
       } else {
         principal = subject.getPrincipal().toString();
