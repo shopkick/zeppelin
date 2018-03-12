@@ -40,6 +40,7 @@ function ParagraphCtrl($scope, $rootScope, $route, $window, $routeParams, $locat
   $scope.parentNote = null;
   $scope.paragraph = null;
   $scope.originalText = '';
+  $scope.serverText = '';
   $scope.editor = null;
 
   var editorSetting = {};
@@ -107,6 +108,7 @@ function ParagraphCtrl($scope, $rootScope, $route, $window, $routeParams, $locat
     $scope.paragraph = newParagraph;
     $scope.parentNote = note;
     $scope.originalText = angular.copy(newParagraph.text);
+    $scope.serverText = angular.copy(newParagraph.text);
     $scope.chart = {};
     $scope.baseMapOption = ['Streets', 'Satellite', 'Hybrid', 'Topo', 'Gray', 'Oceans', 'Terrain'];
     $scope.colWidthOption = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -1011,8 +1013,10 @@ function ParagraphCtrl($scope, $rootScope, $route, $window, $routeParams, $locat
         isEmpty(data.paragraph.results) !== isEmpty($scope.paragraph.results) ||
         data.paragraph.status === 'ERROR' || (data.paragraph.status === 'FINISHED' && statusChanged);
 
-      if ($scope.paragraph.text !== data.paragraph.text) {
-        if ($scope.dirtyText) {         // check if editor has local update
+      if ($scope.paragraph.text !== data.paragraph.text &&
+      $scope.originalText !== data.paragraph.text &&
+      $scope.serverText !== data.paragraph.text) {
+        if ($scope.dirtyText) {         // editor has local updates -
           if ($scope.dirtyText === data.paragraph.text) {  // when local update is the same from remote, clear local update
             $scope.paragraph.text = data.paragraph.text;
             $scope.dirtyText = undefined;
@@ -1025,6 +1029,8 @@ function ParagraphCtrl($scope, $rootScope, $route, $window, $routeParams, $locat
           $scope.originalText = angular.copy(data.paragraph.text);
         }
       }
+
+      $scope.serverText = angular.copy(data.paragraph.text);
 
       /** broadcast update to result controller **/
       if (data.paragraph.results && data.paragraph.results.msg) {

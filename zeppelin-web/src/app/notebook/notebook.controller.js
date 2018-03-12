@@ -868,6 +868,48 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
     }
   };
 
+  var isEmpty = function(object) {
+    return !object;
+  };
+
+  var isNoteChanged = function(current,fetched) {
+    if (current.id !== fetched.id || current.length !== fetched.length) {
+      return true;
+    } else {
+      for (var i = 0; i < fetched.paragraphs.length; i++) {
+        var cp = current.paragraphs[i];
+        var fp = fetched.paragraphs[i];
+        if (cp.id !== fp.id) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  var triggerUpdateParagraphs = function(current,fetched) {
+    for (var i = 0; i < fetched.paragraphs.length; i++) {
+      var cp = current.paragraphs[i];
+      var fp = fetched.paragraphs[i];
+      if (cp.dateCreated !== fp.dateCreated ||
+      cp.text !== fp.text ||
+      cp.dateFinished !== fp.dateFinished ||
+      cp.dateStarted !== fp.dateStarted ||
+      cp.dateUpdated !== fp.dateUpdated ||
+      cp.status !== fp.status ||
+      cp.jobName !== fp.jobName ||
+      cp.title !== fp.title ||
+      isEmpty(cp.results) !== isEmpty(fp.results) ||
+      cp.errorMessage !== fp.errorMessage ||
+      !angular.equals(cp.settings, fp.settings) ||
+      !angular.equals(cp.config, fp.config)) {
+        var data = {}
+        data.paragraph = fp;
+        $rootScope.$broadcast('updateParagraph', data);
+      }
+    }
+  }
+
   angular.element(document).click(function() {
     angular.element('.ace_autocomplete').hide();
   });
@@ -987,7 +1029,11 @@ function NotebookCtrl($scope, $route, $routeParams, $location, $rootScope,
       $location.path('/');
     }
 
-    $scope.note = note;
+    if ($scope.note === null || isNoteChanged($scope.note,note)) {
+      $scope.note = note;
+    }
+
+    triggerUpdateParagraphs($scope.note,note)
 
     $scope.paragraphUrl = $routeParams.paragraphId;
     $scope.asIframe = $routeParams.asIframe;
