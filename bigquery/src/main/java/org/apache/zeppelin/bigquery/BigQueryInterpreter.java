@@ -25,6 +25,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
+
+import com.google.cloud.bigquery.*;
+import com.google.cloud.http.HttpTransportOptions;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterResult;
@@ -34,14 +37,7 @@ import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryOptions;
-import com.google.cloud.bigquery.Field;
-import com.google.cloud.bigquery.FieldValue;
-import com.google.cloud.bigquery.QueryRequest;
-import com.google.cloud.bigquery.QueryResponse;
-import com.google.cloud.bigquery.QueryResult;
-import com.google.cloud.bigquery.Schema;
+
 
 /**
  * BigQuery interpreter for Zeppelin.
@@ -69,6 +65,7 @@ import com.google.cloud.bigquery.Schema;
 public class BigQueryInterpreter extends Interpreter {
 
   private static final String LEGACY_SQL = "#legacySQL";
+  private static final int HTTP_TIMEOUT = 10000;
   private static Logger logger = LoggerFactory.getLogger(BigQueryInterpreter.class);
   private static BigQuery service = null;
   //Mutex created to create the singleton in thread-safe fashion.
@@ -83,7 +80,6 @@ public class BigQueryInterpreter extends Interpreter {
   private static final char TAB = '\t';
 
   private static String jobId = null;
-  private static String projectId = null;
 
   private static final List<InterpreterCompletion> NO_COMPLETION = new ArrayList<>();
 
@@ -111,11 +107,13 @@ public class BigQueryInterpreter extends Interpreter {
 
   //Function that Creates an authorized client to Google Bigquery.
   private BigQuery createAuthorizedClient() throws IOException {
+    HttpTransportOptions httpOptions = HttpTransportOptions.newBuilder()
+            .setConnectTimeout(HTTP_TIMEOUT)
+            .setReadTimeout(HTTP_TIMEOUT).build();
     BigQueryOptions options = BigQueryOptions.newBuilder()
-        // TODO: Set Credentials
-        //.setCredentials(credentials)
-        .setProjectId(getProperty(PROJECT_ID))
-        .build();
+            .setTransportOptions(httpOptions)
+            .setProjectId(getProperty(PROJECT_ID))
+            .build();
     return options.getService();
   }
 
@@ -132,10 +130,10 @@ public class BigQueryInterpreter extends Interpreter {
             }
 
             format.setTimeZone(TimeZone.getTimeZone(tZone));
-            logger.debug("fix  getFormattedString formatted field value  is {}", value);
+            logger.debug("fix getFormattedString formatted field value  is {}", value);
             return format.format(date);
           } catch (Exception e) {
-            logger.error("Exception occured {}", e);
+            logger.error("Exception occurred {}", e);
           }
           break;
         default:
@@ -146,50 +144,68 @@ public class BigQueryInterpreter extends Interpreter {
 
   //Function to call bigQuery to run SQL and return results to the Interpreter for output
   private InterpreterResult executeSql(String sql) {
-
-    long wTime = Long.parseLong(getProperty(WAIT_TIME));
-    return new InterpreterResult(Code.SUCCESS, runQuery(sql, wTime));
+    try {
+      return new InterpreterResult(Code.SUCCESS, runQuery(sql));
+    } catch (InterruptedException e) {
+      logger.error(e.getMessage());
+      return new InterpreterResult(Code.ERROR, e.getMessage());
+    }
   }
 
-  private String runQuery(String query, long wTime) {
+  private String runQuery(String query) throws InterruptedException {
     boolean useLegacy = query.trim().startsWith(LEGACY_SQL);
-    QueryRequest request = QueryRequest.newBuilder(query).setUseLegacySql(useLegacy).setMaxWaitTime(wTime).build();
-    QueryResponse response = service.query(request);
-    // Wait for things to finish
-    while (!response.jobCompleted()) {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        logger.info("Interrupted when waiting for query result", e);
-      }
-      response = service.getQueryResults(response.getJobId());
-    }
-    if (response.hasErrors()) {
-      // handle errors
-    }
-    return formatResult(response);
+    QueryJobConfiguration jobConfiguration = QueryJobConfiguration
+            .newBuilder(query)
+            .setUseLegacySql(useLegacy)
+            .build();
+    JobInfo jobInfo = JobInfo.newBuilder(jobConfiguration).build();
+    Job job = service.create(jobInfo);
+    jobId = job.getJobId().getJob();
+    BigQuery.QueryResultsOption resultsOption = BigQuery.QueryResultsOption
+            .maxWaitTime(Long.valueOf(getProperty(WAIT_TIME)));
+
+    TableResult tableResult = job.getQueryResults(resultsOption);
+    return formatResult(tableResult);
   }
 
-  private String formatResult(QueryResponse response) {
-    QueryResult result = response.getResult();
-    Iterable<List<FieldValue>> rows = result.iterateAll();
+  private String formatResult(TableResult result) {
+
     StringBuilder strResponse = new StringBuilder("%table ");
-    
-    Schema schema = result.getSchema();
-    for(Field field : schema.getFields()) {
-      strResponse.append(field).append(TAB);
+    FieldList fields = result.getSchema().getFields();
+    for (Field field : fields) {
+      strResponse.append(field.getName()).append(TAB);
     }
-    
+    strResponse.setLength(strResponse.length() - 1);
     strResponse.append(NEWLINE);
-    
-    for(List<FieldValue> row : rows) {
-      for(FieldValue fieldValue : row) {
-        // TODO: Check datatypes and convert accordingly
-        strResponse.append(fieldValue.getStringValue()).append(TAB);
+    int maxRows = Integer.parseInt(getProperty(MAX_ROWS));
+    int rowNum = 0, colNum;
+    String tZone = getProperty(TIME_ZONE);
+    while (true) {
+      Iterable<FieldValueList> rows = result.getValues();
+      for (FieldValueList row : rows) {
+        if (rowNum++ >= maxRows) {
+          break;
+        }
+        colNum = 0;
+        for (FieldValue fieldValue : row) {
+          String formattedField;
+          if (fieldValue.isNull()) {
+            formattedField = "<NULL>";
+          } else {
+            formattedField = getFormattedString(
+                    fieldValue.getStringValue(),
+                    fields.get(colNum).getType().name(),
+                    tZone);
+          }
+          colNum++;
+          strResponse.append(formattedField).append(TAB);
+        }
+        strResponse.setLength(strResponse.length() - 1);
+        strResponse.append(NEWLINE);
       }
-      strResponse.append(NEWLINE);
+      if (!result.hasNextPage() || rowNum >= maxRows ) { break; }
+      result = result.getNextPage();
     }
-    
     return strResponse.toString();
   }
 
@@ -226,7 +242,7 @@ public class BigQueryInterpreter extends Interpreter {
 
     logger.info("Trying to Cancel current query statement.");
 
-    if (service != null && jobId != null && projectId != null) {
+    if (service != null && jobId != null) {
       boolean cancel = service.cancel(jobId);
       if (cancel) {
         logger.info("Cancel job succeeded: ", jobId);
