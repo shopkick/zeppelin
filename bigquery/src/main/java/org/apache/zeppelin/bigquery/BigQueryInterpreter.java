@@ -139,7 +139,7 @@ public class BigQueryInterpreter extends Interpreter {
         default:
           break;
     }
-    return value;
+    return value.replace('\n', ' ').replace('\t', ' ');
   }
 
   //Function to call bigQuery to run SQL and return results to the Interpreter for output
