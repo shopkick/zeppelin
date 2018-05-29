@@ -39,7 +39,7 @@
     <bigquery.test.exclude>**/BigQueryInterpreterTest.java</bigquery.test.exclude>
 
     <!-- library versions -->
-    <gcp-beta.version>0.38.0-beta</gcp-beta.version>
+    <gcp.version>1.31.0</gcp.version>
     <gson.version>2.6</gson.version>
   </properties>
 
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-bigquery</artifactId>
-      <version>${gcp-beta.version}</version>
+      <version>${gcp.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
