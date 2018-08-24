@@ -16,10 +16,10 @@
 package org.apache.zeppelin.notebook.repo;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import org.apache.http.client.HttpResponseException;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.notebook.GoogleCloudStorage;
 import org.apache.zeppelin.notebook.Note;
@@ -38,11 +38,18 @@ public class GoogleCloudStorageNotebookRepo implements NotebookRepo {
   private static final Logger LOG = LoggerFactory.getLogger(GoogleCloudStorageNotebookRepo.class);
 
   private final ZeppelinConfiguration conf;
+  private final int GCSNotebookMaxRetriesToSave;
   private final GoogleCloudStorage cloudStorage;
 
   public GoogleCloudStorageNotebookRepo(ZeppelinConfiguration conf) throws IOException {
     this.conf = conf;
+    this.GCSNotebookMaxRetriesToSave = conf.getInt(
+            ZeppelinConfiguration
+            .ConfVars
+            .ZEPPELIN_NOTEBOOK_GOOGLE_MAX_RETRIES_TO_SAVE_STORAGE_OBJECT
+    );
     this.cloudStorage = GoogleCloudStorage.get(this.conf);
+
   }
 
   @Override
@@ -95,11 +102,31 @@ public class GoogleCloudStorageNotebookRepo implements NotebookRepo {
 
     String noteJson = Note.GSON.toJson(note);
     String notePath = "/" + "notebook" + "/" + note.getId() + "/" + "note.json";
-
-    try {
-      this.cloudStorage.putNote(notePath, noteJson);
-    } catch (Exception ace) {
-      throw new IOException("Unable to store note in Google Cloud Storage: " + ace, ace);
+    Integer retries = 0;
+    Random randomGenerator = new Random();
+    while (retries < this.GCSNotebookMaxRetriesToSave) {
+      try {
+        this.cloudStorage.putNote(notePath, noteJson);
+        break;
+      } catch (GoogleJsonResponseException ace) {
+        if (ace.getDetails().getCode() == 429) {
+          try {
+            if (retries < GCSNotebookMaxRetriesToSave) {
+              Thread.sleep(1000 + randomGenerator.nextInt(100));
+              LOG.info("Retrying store to GCS for " + note.getId() + " , retry count " + retries);
+              retries += 1;
+            } else {
+              throw new IOException("Retry interrupted while store note in " +
+                      "Google Cloud Storage: " + ace, ace);
+            }
+          } catch (InterruptedException e) {
+            throw new IOException("Retry interrupted while store note in " +
+                    "Google Cloud Storage: " + ace, ace);
+          }
+        }
+      } catch (Exception ace) {
+        throw new IOException("Unable to store note in Google Cloud Storage: " + ace, ace);
+      }
     }
   }
 
