@@ -18,6 +18,7 @@ package org.apache.zeppelin.notebook.repo;
 import java.io.IOException;
 import java.util.*;
 
+
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import org.apache.http.client.HttpResponseException;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
@@ -29,6 +30,8 @@ import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.*;
 
 /**
  * Backend for storing Notebooks on Google Cloud Storage
@@ -102,7 +105,7 @@ public class GoogleCloudStorageNotebookRepo implements NotebookRepo {
 
     String noteJson = Note.GSON.toJson(note);
     String notePath = "/" + "notebook" + "/" + note.getId() + "/" + "note.json";
-    Integer retries = 0;
+    int retries = 0;
     Random randomGenerator = new Random();
     while (retries < this.GCSNotebookMaxRetriesToSave) {
       try {
@@ -163,13 +166,13 @@ public class GoogleCloudStorageNotebookRepo implements NotebookRepo {
   @Override
   public List<Revision> revisionHistory(String noteId, AuthenticationInfo subject) {
     LOG.warn("Get Note revisions feature isn't supported in {}", this.getClass().toString());
-    return Collections.emptyList();
+    return emptyList();
   }
 
   @Override
   public List<NotebookRepoSettingsInfo> getSettings(AuthenticationInfo subject) {
     LOG.warn("Method not implemented");
-    return Collections.emptyList();
+    return emptyList();
   }
 
   @Override

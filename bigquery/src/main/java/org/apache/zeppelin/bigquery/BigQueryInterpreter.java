@@ -63,24 +63,24 @@ import org.slf4j.LoggerFactory;
 
 public class BigQueryInterpreter extends Interpreter {
 
-  private static final String LEGACY_SQL = "#legacySQL";
-  private static final int HTTP_TIMEOUT = 10000;
-  private static Logger logger = LoggerFactory.getLogger(BigQueryInterpreter.class);
-  private static BigQuery service = null;
+  protected static final String LEGACY_SQL = "#legacySQL";
+  protected static final int HTTP_TIMEOUT = 10000;
+  protected static Logger logger = LoggerFactory.getLogger(BigQueryInterpreter.class);
+  protected static BigQuery service = null;
   //Mutex created to create the singleton in thread-safe fashion.
-  private static Object serviceLock = new Object();
+  protected static Object serviceLock = new Object();
 
   static final String PROJECT_ID = "zeppelin.bigquery.project_id";
   static final String WAIT_TIME = "zeppelin.bigquery.wait_time";
   static final String MAX_ROWS = "zeppelin.bigquery.max_no_of_rows";
   static final String TIME_ZONE = "zeppelin.bigquery.time_zone";
-  
-  private static final char NEWLINE = '\n';
-  private static final char TAB = '\t';
 
-  private static String jobId = null;
+  protected static final char NEWLINE = '\n';
+  protected static final char TAB = '\t';
 
-  private static final List<InterpreterCompletion> NO_COMPLETION = new ArrayList<>();
+  protected static String jobId = null;
+
+  protected static final List<InterpreterCompletion> NO_COMPLETION = new ArrayList<>();
 
   public BigQueryInterpreter(Properties property) {
     super(property);
@@ -105,7 +105,7 @@ public class BigQueryInterpreter extends Interpreter {
   }
 
   //Function that Creates an authorized client to Google Bigquery.
-  private BigQuery createAuthorizedClient() throws IOException {
+  protected BigQuery createAuthorizedClient() throws IOException {
     HttpTransportOptions httpOptions = HttpTransportOptions.newBuilder()
             .setConnectTimeout(HTTP_TIMEOUT)
             .setReadTimeout(HTTP_TIMEOUT).build();
@@ -142,7 +142,7 @@ public class BigQueryInterpreter extends Interpreter {
   }
 
   //Function to call bigQuery to run SQL and return results to the Interpreter for output
-  private InterpreterResult executeSql(String sql) {
+  protected InterpreterResult executeSql(String sql) {
     try {
       return new InterpreterResult(Code.SUCCESS, runQuery(sql));
     } catch (InterruptedException e) {
@@ -151,23 +151,27 @@ public class BigQueryInterpreter extends Interpreter {
     }
   }
 
-  private String runQuery(String query) throws InterruptedException {
+  protected String runQuery(String query) throws InterruptedException {
     boolean useLegacy = query.trim().startsWith(LEGACY_SQL);
     QueryJobConfiguration jobConfiguration = QueryJobConfiguration
             .newBuilder(query)
             .setUseLegacySql(useLegacy)
             .build();
     JobInfo jobInfo = JobInfo.newBuilder(jobConfiguration).build();
-    Job job = service.create(jobInfo);
-    jobId = job.getJobId().getJob();
-    BigQuery.QueryResultsOption resultsOption = BigQuery.QueryResultsOption
-            .maxWaitTime(Long.valueOf(getProperty(WAIT_TIME)));
+    try {
+      Job job = service.create(jobInfo);
+      jobId = job.getJobId().getJob();
+      BigQuery.QueryResultsOption resultsOption = BigQuery.QueryResultsOption
+              .maxWaitTime(Long.valueOf(getProperty(WAIT_TIME)));
 
-    TableResult tableResult = job.getQueryResults(resultsOption);
-    return formatResult(tableResult);
+      TableResult tableResult = job.getQueryResults(resultsOption);
+      return formatResult(tableResult);
+    } catch (NullPointerException n){
+      throw new InterruptedException("Cannot instantiate the interpreter and run query");
+    }
   }
 
-  private String formatResult(TableResult result) {
+  protected String formatResult(TableResult result) {
 
     StringBuilder strResponse = new StringBuilder("%table ");
     FieldList fields = result.getSchema().getFields();
