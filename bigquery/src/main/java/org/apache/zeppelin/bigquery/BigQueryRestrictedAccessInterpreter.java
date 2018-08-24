@@ -48,6 +48,10 @@ import java.util.Properties;
  * <li>{@code zeppelin.bigquery.project_id} - Project ID in GCP</li>
  * <li>{@code zeppelin.bigquery.wait_time} - Query Timeout in ms</li>
  * <li>{@code zeppelin.bigquery.max_no_of_rows} - Max Result size</li>
+ * <li>{@code zeppelin.bigquery.restricted_interpreter_credentials} -
+ *                                Interpreter service account json</li>
+ * <li>{@code zeppelin.bigquery.restricted_interpreter_users} -
+ *                                Comma separated authorized users</li>
  * </ul>
  * <p>
  * <p>
