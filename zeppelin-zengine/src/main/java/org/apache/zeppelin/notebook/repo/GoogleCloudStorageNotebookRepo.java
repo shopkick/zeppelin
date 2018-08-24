@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Collections;
 
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -34,7 +35,7 @@ import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.emptyList;
+
 
 
 /**
@@ -170,13 +171,13 @@ public class GoogleCloudStorageNotebookRepo implements NotebookRepo {
   @Override
   public List<Revision> revisionHistory(String noteId, AuthenticationInfo subject) {
     LOG.warn("Get Note revisions feature isn't supported in {}", this.getClass().toString());
-    return emptyList();
+    return Collections.emptyList();
   }
 
   @Override
   public List<NotebookRepoSettingsInfo> getSettings(AuthenticationInfo subject) {
     LOG.warn("Method not implemented");
-    return emptyList();
+    return Collections.emptyList();
   }
 
   @Override
