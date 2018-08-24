@@ -16,7 +16,10 @@
 package org.apache.zeppelin.notebook.repo;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -31,7 +34,8 @@ import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyList;
+
 
 /**
  * Backend for storing Notebooks on Google Cloud Storage
