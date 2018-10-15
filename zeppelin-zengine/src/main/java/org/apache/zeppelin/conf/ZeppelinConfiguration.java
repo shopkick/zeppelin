@@ -626,7 +626,8 @@ public class ZeppelinConfiguration extends XMLConfiguration {
     ZEPPELIN_NOTEBOOK_GOOGLE_APPLICATION_NAME("zeppelin.notebook.google.applicationName", 
      "zeppelin-v01"),
     ZEPPELIN_NOTEBOOK_GOOGLE_PROJECT_ID("zeppelin.notebook.google.projectId", "sk-data-platform"),
-    
+    ZEPPELIN_NOTEBOOK_GOOGLE_MAX_RETRIES_TO_SAVE_STORAGE_OBJECT(
+            "zeppelin.notebook.google.maxRetriesToSaveStorageObject", 30),
     ZEPPELIN_NOTEBOOK_AZURE_CONNECTION_STRING("zeppelin.notebook.azure.connectionString", null),
     ZEPPELIN_NOTEBOOK_AZURE_SHARE("zeppelin.notebook.azure.share", "zeppelin"),
     ZEPPELIN_NOTEBOOK_AZURE_USER("zeppelin.notebook.azure.user", "user"),
