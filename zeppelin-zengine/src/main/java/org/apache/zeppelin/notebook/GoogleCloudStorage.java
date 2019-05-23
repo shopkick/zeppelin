@@ -152,13 +152,18 @@ public class GoogleCloudStorage {
   public List<String> listBucket(String bucketName) throws Exception {
 
     List<String> list = new ArrayList<String>();
-
-    List<StorageObject> objects = storage.objects().list(bucketName).execute().getItems();
-    if (objects != null) {
-      for (StorageObject o : objects) {
-        list.add(o.getName());
+    Objects objects;
+    Storage.Objects.List libRequest = storage.objects().list(bucketName);
+    do {
+      objects = libRequest.execute();
+      List<StorageObject> storageObjects = storage.objects().list(bucketName).execute().getItems();
+      if (storageObjects != null) {
+        for (StorageObject o : storageObjects) {
+          list.add(o.getName());
+        }
       }
-    }
+      libRequest.setPageToken(objects.getNextPageToken());
+    } while(null != objects.getNextPageToken());
 
     return list;
   }
