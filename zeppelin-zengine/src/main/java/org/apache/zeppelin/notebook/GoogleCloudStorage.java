@@ -239,22 +239,7 @@ public class GoogleCloudStorage {
    * @throws Exception
    */
   public List<String> listNotes() throws Exception {
-
-    Storage.Objects.List listRequest = storage.objects().list(defaultBucket);
-
-    Objects objects;
-    List<String> notes = new ArrayList<>();
-    do {
-      objects = listRequest.execute();
-      List<StorageObject> storageObjects = objects.getItems();
-      if (storageObjects != null) {
-        for (StorageObject object : storageObjects) {
-          notes.add(object.getName());
-        }
-      }
-      listRequest.setPageToken(objects.getNextPageToken());
-    } while (null != objects.getNextPageToken());
-    return notes;
+    return listBucket(defaultBucket);
   }
 
   /**
