@@ -156,7 +156,7 @@ public class GoogleCloudStorage {
     Storage.Objects.List libRequest = storage.objects().list(bucketName);
     do {
       objects = libRequest.execute();
-      List<StorageObject> storageObjects = storage.objects().list(bucketName).execute().getItems();
+      List<StorageObject> storageObjects = libRequest.execute().getItems();
       if (storageObjects != null) {
         for (StorageObject o : storageObjects) {
           list.add(o.getName());
