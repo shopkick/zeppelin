@@ -45,7 +45,7 @@ public class GoogleCloudStorage {
     try {
       this.storage = getStorage();
       LOGGER.info("Created Google Cloud Storage Connection, with Application Name: "
-          + this.storage.getApplicationName());
+              + this.storage.getApplicationName());
 
       if (!checkBucketexists(defaultBucket)) {
         LOGGER.info("Creating Default Google Cloud Storage Bucket: " + defaultBucket);
@@ -88,14 +88,14 @@ public class GoogleCloudStorage {
     credentials = credentials.createScoped(scopes);
 
     storage = new Storage.Builder(httpTransport, jsonFactory, credentials)
-        .setApplicationName(defaultBucket).build();
+            .setApplicationName(defaultBucket).build();
 
     return storage;
   }
 
   /**
    * check if bucket exists
-   * 
+   *
    * @param bucketName Name of bucket to create
    * @return true if bucket exists else false
    * @throws Exception
@@ -116,7 +116,7 @@ public class GoogleCloudStorage {
 
   /**
    * Creates a bucket
-   * 
+   *
    * @param bucketName Name of bucket to create
    * @throws Exception
    */
@@ -127,13 +127,13 @@ public class GoogleCloudStorage {
 
     storage.buckets()
         .insert(zConf.getString(ZeppelinConfiguration.ConfVars.ZEPPELIN_NOTEBOOK_GOOGLE_PROJECT_ID),
-            bucket)
-        .execute();
+                    bucket)
+            .execute();
   }
 
   /**
    * Deletes a bucket
-   * 
+   *
    * @param bucketName Name of bucket to delete
    * @throws Exception
    */
@@ -144,7 +144,7 @@ public class GoogleCloudStorage {
 
   /**
    * Lists the objects in a bucket
-   * 
+   *
    * @param bucketName bucket name to list
    * @return Array of object names
    * @throws Exception
@@ -165,7 +165,7 @@ public class GoogleCloudStorage {
 
   /**
    * List the buckets with the project (Project is configured in properties)
-   * 
+   *
    * @return
    * @throws Exception
    */
@@ -175,7 +175,7 @@ public class GoogleCloudStorage {
 
     List<Bucket> buckets = storage.buckets()
         .list(zConf.getString(ZeppelinConfiguration.ConfVars.ZEPPELIN_NOTEBOOK_GOOGLE_PROJECT_ID))
-        .execute().getItems();
+            .execute().getItems();
     if (buckets != null) {
       for (Bucket b : buckets) {
         list.add(b.getName());
@@ -187,7 +187,7 @@ public class GoogleCloudStorage {
 
   /**
    * Uploads a note file to a bucket. Filename and content type will be based on the original file.
-   * 
+   *
    * @param notePath Note file name
    * @param noteJson Note Content
    * @throws Exception
@@ -198,7 +198,7 @@ public class GoogleCloudStorage {
     object.setBucket(defaultBucket);
 
     InputStreamContent content =
-        new InputStreamContent("text/plain", new StringInputStream(noteJson));
+            new InputStreamContent("text/plain", new StringInputStream(noteJson));
 
     Storage.Objects.Insert insert = storage.objects().insert(defaultBucket, null, content);
     insert.setName(notePath);
@@ -209,7 +209,7 @@ public class GoogleCloudStorage {
 
   /**
    * Get Note file within a bucket
-   * 
+   *
    * @param notePath Name of note to retrieve
    * @return String Returns the note contents
    * @throws Exception
@@ -229,28 +229,32 @@ public class GoogleCloudStorage {
 
   /**
    * List all Notes within a bucket
-   * 
+   *
    * @return List<String> returns the list of note names
    * @throws Exception
    */
   public List<String> listNotes() throws Exception {
 
-    Objects objects = storage.objects().list(defaultBucket).execute();
+    Storage.Objects.List listRequest = storage.objects().list(defaultBucket);
+
+    Objects objects;
     List<String> notes = new ArrayList<>();
-
-    ArrayList<StorageObject> items = (ArrayList<StorageObject>) objects.get("items");
-    if (items == null)
-      return notes;
-
-    for (StorageObject object : items) {
-      notes.add(object.getName());
-    }
+    do {
+      objects = listRequest.execute();
+      List<StorageObject> storageObjects = objects.getItems();
+      if (storageObjects != null) {
+        for (StorageObject object : storageObjects) {
+          notes.add(object.getName());
+        }
+      }
+      listRequest.setPageToken(objects.getNextPageToken());
+    } while (null != objects.getNextPageToken());
     return notes;
   }
 
   /**
    * Deletes a note file within a bucket
-   * 
+   *
    * @param notePath The note file to delete
    * @throws Exception
    */
